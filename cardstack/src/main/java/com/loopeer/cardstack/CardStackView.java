@@ -235,10 +235,10 @@ public class CardStackView extends ViewGroup {
                 childTop += lp.topMargin;
                 if (i != 0) {
                     childTop -= mOverlapeGaps * 2;
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, "y", child.getTop(), childTop);
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                     mSet.play(oAnim);
                 } else {
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, "y", child.getTop(), childTop);
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                     mSet.play(oAnim);
                 }
                 childTop += mNormalChildHeight;
@@ -259,7 +259,7 @@ public class CardStackView extends ViewGroup {
             initAnimatorSet();
             mSelectPosition = position;
             itemView.clearAnimation();
-            ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, "y", itemView.getTop(), mParentScrollView.getScrollY() + getPaddingTop());
+            ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, View.Y, itemView.getY(), mParentScrollView.getScrollY() + getPaddingTop());
             mSet.play(oa);
             int collapseShowItemCount = 0;
             for (int i = 0; i < getChildCount(); i++) {
@@ -269,11 +269,11 @@ public class CardStackView extends ViewGroup {
                 child.clearAnimation();
                 if (collapseShowItemCount < 3) {
                     childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + mParentScrollView.getScrollY();
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, "y", child.getTop() + mParentScrollView.getScrollY(), childTop);
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + mParentScrollView.getScrollY(), childTop);
                     mSet.play(oAnim);
                     collapseShowItemCount++;
                 } else {
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, "y", child.getTop() + mParentScrollView.getScrollY(), mShowHeight + mParentScrollView.getScrollY());
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + mParentScrollView.getScrollY(), mShowHeight + mParentScrollView.getScrollY());
                     mSet.play(oAnim);
                 }
             }
