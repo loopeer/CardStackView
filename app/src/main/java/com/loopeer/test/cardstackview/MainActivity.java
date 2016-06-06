@@ -1,6 +1,7 @@
 package com.loopeer.test.cardstackview;
 
 import android.os.Bundle;
+import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 
 import com.loopeer.cardstack.CardStackView;
@@ -48,17 +49,17 @@ public class MainActivity extends AppCompatActivity {
         mTestStackAdapter = new TestStackAdapter(this);
         mStackView.setAdapter(mTestStackAdapter);
 
-        mTestStackAdapter.updateData(Arrays.asList(TEST_DATAS));
-/*
+
         new Handler().postDelayed(
                 new Runnable() {
                     @Override
                     public void run() {
-                        mStackView.updateSelectPosition(3);
+                        mTestStackAdapter.updateData(Arrays.asList(TEST_DATAS));
+
                     }
                 }
                 , 200
-        );*/
+        );
 
     }
 }

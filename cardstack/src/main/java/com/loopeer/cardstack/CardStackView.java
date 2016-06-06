@@ -195,7 +195,6 @@ public class CardStackView extends ViewGroup {
                 collapseShowItemCount++;
             } else {
                 child.layout(childLeft, mShowHeight, childLeft + childWidth, mShowHeight + childHeight);
-
             }
         }
     }
