@@ -17,6 +17,8 @@ import java.util.List;
 
 public class CardStackView extends ViewGroup {
 
+    private static final String TAG = "CardStackView";
+
     private static final int DEFUAL_SELECT_POSITION = -1;
     private static final int ANIMATION_DURATION = 300;
 
@@ -61,12 +63,17 @@ public class CardStackView extends ViewGroup {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         mParentScrollView = (ScrollView) getParent();
-        mShowHeight = mParentScrollView.getMeasuredHeight() - mParentScrollView.getPaddingTop() - mParentScrollView.getPaddingBottom();
+        checkContentHeightByParent();
         if (mShowType == EXPAND_TYPE) {
             measureExpand(widthMeasureSpec, heightMeasureSpec);
         } else {
             measureCollapse(widthMeasureSpec, heightMeasureSpec);
         }
+
+    }
+
+    private void checkContentHeightByParent() {
+        mShowHeight = mParentScrollView.getMeasuredHeight() - mParentScrollView.getPaddingTop() - mParentScrollView.getPaddingBottom();
     }
 
     private void measureExpand(int widthMeasureSpec, int heightMeasureSpec) {
@@ -136,6 +143,7 @@ public class CardStackView extends ViewGroup {
 
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
+            child.setTranslationY(0);
             final int childWidth = child.getMeasuredWidth();
             final int childHeight = child.getMeasuredHeight();
 
@@ -173,19 +181,21 @@ public class CardStackView extends ViewGroup {
                 (MarginLayoutParams) showingChild.getLayoutParams();
         childTop += lp.topMargin;
         showingChild.layout(childLeft, childTop, childLeft + showChildWidth, childTop + showChildHeight);
-
+        showingChild.setTranslationY(0);
         int collapseShowItemCount = 0;
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
+            child.setTranslationY(0);
             int childWidth = child.getMeasuredWidth();
             int childHeight = child.getMeasuredHeight();
             if (i == mSelectPosition) continue;
             if (collapseShowItemCount < 3) {
-                childTop = getHeight() - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps);
+                childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps);
                 child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
                 collapseShowItemCount++;
             } else {
-                child.layout(childLeft, getHeight(), childLeft + childWidth, getHeight() + childHeight);
+                child.layout(childLeft, mShowHeight, childLeft + childWidth, mShowHeight + childHeight);
+
             }
         }
     }
@@ -200,15 +210,26 @@ public class CardStackView extends ViewGroup {
         removeAllViews();
         mViewHolders.clear();
         for (int i = 0; i < mStackAdapter.getItemCount(); i++) {
-            ViewHolder holder = mStackAdapter.createView(this, mStackAdapter.getItemViewType(i));
+            ViewHolder holder = getViewHolder(i);
             holder.position = i;
             holder.onItemExpand(i == mSelectPosition);
-            mViewHolders.add(holder);
             addView(holder.itemView);
             setClickAnimator(holder, i);
             mStackAdapter.bindViewHolder(holder, i);
         }
         requestLayout();
+    }
+
+    private ViewHolder getViewHolder(int i) {
+        if (i == DEFUAL_SELECT_POSITION) return null;
+        ViewHolder viewHolder;
+        if (mViewHolders.size() <= i) {
+            viewHolder = mStackAdapter.createView(this, mStackAdapter.getItemViewType(i));
+            mViewHolders.add(viewHolder);
+        } else {
+            viewHolder = mViewHolders.get(i);
+        }
+        return viewHolder;
     }
 
     private void setClickAnimator(final ViewHolder holder, final int position) {
@@ -221,11 +242,12 @@ public class CardStackView extends ViewGroup {
     }
 
     private void doCardClickAnimation(final ViewHolder viewHolder, int position) {
+        checkContentHeightByParent();
         if (mSelectPosition == position) {
             final View itemView = viewHolder.itemView;
             if (mSet != null && mSet.isRunning()) return;
             initAnimatorSet();
-            viewHolder.onItemExpand(false);
+            viewHolder.getContentView().setVisibility(INVISIBLE);
             int childTop = getPaddingTop();
             for (int i = 0; i < getChildCount(); i++) {
                 View child = getChildAt(i);
@@ -244,12 +266,13 @@ public class CardStackView extends ViewGroup {
                 childTop += mNormalChildHeight;
             }
             mSet.addListener(new AnimatorListenerAdapter() {
+
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
                     mShowType = EXPAND_TYPE;
                     mSelectPosition = DEFUAL_SELECT_POSITION;
-                    refreshView();
+                    viewHolder.getContentView().setVisibility(GONE);
                 }
             });
             mSet.start();
@@ -257,6 +280,11 @@ public class CardStackView extends ViewGroup {
             final View itemView = viewHolder.itemView;
             if (mSet != null && mSet.isRunning()) return;
             initAnimatorSet();
+            final int preSelectPosition = mSelectPosition;
+            final ViewHolder preSelectViewHolder = getViewHolder(preSelectPosition);
+            if (preSelectViewHolder != null) {
+                preSelectViewHolder.getContentView().setVisibility(INVISIBLE);
+            }
             mSelectPosition = position;
             itemView.clearAnimation();
             ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, View.Y, itemView.getY(), mParentScrollView.getScrollY() + getPaddingTop());
@@ -265,7 +293,7 @@ public class CardStackView extends ViewGroup {
             for (int i = 0; i < getChildCount(); i++) {
                 int childTop;
                 if (i == mSelectPosition) continue;
-                View child = getChildAt(i);
+                final View child = getChildAt(i);
                 child.clearAnimation();
                 if (collapseShowItemCount < 3) {
                     childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + mParentScrollView.getScrollY();
@@ -282,9 +310,12 @@ public class CardStackView extends ViewGroup {
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
                     mShowType = COLLAPSE_TYPE;
-                    refreshView();
+                    if (preSelectViewHolder != null) {
+                        preSelectViewHolder.getContentView().setVisibility(GONE);
+                    }
                     viewHolder.onItemExpand(true);
                 }
+
             });
             mSet.start();
         }

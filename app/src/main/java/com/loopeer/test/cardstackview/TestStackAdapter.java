@@ -42,6 +42,11 @@ public class TestStackAdapter extends StackAdapter<Integer> {
             mContainerContent.setVisibility(b ? View.VISIBLE : View.GONE);
         }
 
+        @Override
+        public View getContentView() {
+            return mContainerContent;
+        }
+
         public void onBind(Integer integer) {
             mLayout.getBackground().setColorFilter(ContextCompat.getColor(getContext(), integer), PorterDuff.Mode.SRC_IN);
         }
