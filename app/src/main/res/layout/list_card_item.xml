@@ -14,7 +14,8 @@
     <LinearLayout
         android:id="@+id/container_list_content"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content"
+        android:animateLayoutChanges="true">
 
         <TextView
             android:layout_width="match_parent"

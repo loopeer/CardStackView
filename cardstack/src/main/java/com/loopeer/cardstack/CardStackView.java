@@ -19,7 +19,7 @@ public class CardStackView extends ViewGroup {
     private static final String TAG = "CardStackView";
 
     private static final int DEFUAL_SELECT_POSITION = -1;
-    private static final int ANIMATION_DURATION = 300;
+    private static final int ANIMATION_DURATION = 500;
 
     private int mTotalLength;
     private int mOverlapeGaps;
