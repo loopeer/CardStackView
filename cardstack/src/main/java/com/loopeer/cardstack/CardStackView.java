@@ -56,7 +56,7 @@ public class CardStackView extends ViewGroup {
     private int mNestedYOffset;
     private int mOverscrollDistance;
     private int mOverflingDistance;
-    private boolean mScrollEnable;
+    private boolean mScrollEnable = true;
 
     public CardStackView(Context context) {
         this(context, null);
@@ -548,7 +548,7 @@ public class CardStackView extends ViewGroup {
         int scrollRange = 0;
         if (getChildCount() > 0) {
             scrollRange = Math.max(0,
-                    mTotalLength - (mShowHeight - getPaddingBottom() - getPaddingTop()));
+                    mTotalLength - mShowHeight);
         }
         return scrollRange;
     }
@@ -556,7 +556,7 @@ public class CardStackView extends ViewGroup {
     @Override
     protected int computeVerticalScrollRange() {
         final int count = getChildCount();
-        final int contentHeight = mShowHeight - getPaddingBottom() - getPaddingTop();
+        final int contentHeight = mShowHeight;
         if (count == 0) {
             return contentHeight;
         }
@@ -605,7 +605,7 @@ public class CardStackView extends ViewGroup {
 
     public void fling(int velocityY) {
         if (getChildCount() > 0) {
-            int height = mShowHeight - getPaddingBottom() - getPaddingTop();
+            int height = mShowHeight;
             int bottom = mTotalLength;
             mScroller.fling(getScrollX(), getScrollY(), 0, velocityY, 0, 0, 0,
                     Math.max(0, bottom - height), 0, height / 2);
@@ -617,7 +617,7 @@ public class CardStackView extends ViewGroup {
     public void scrollTo(int x, int y) {
         if (getChildCount() > 0) {
             x = clamp(x, getWidth() - getPaddingRight() - getPaddingLeft(), getWidth());
-            y = clamp(y, getHeight() - getPaddingBottom() - getPaddingBottom(), mTotalLength);
+            y = clamp(y, mShowHeight, mTotalLength);
             if (x != getScrollX() || y != getScrollY()) {
                 super.scrollTo(x, y);
             }
