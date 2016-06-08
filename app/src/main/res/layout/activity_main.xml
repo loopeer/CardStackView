@@ -1,16 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.loopeer.cardstack.EnableScrollView
+<LinearLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:scrollbars="none"
-    android:clipToPadding="false"
-    android:paddingRight="12dp"
-    android:paddingLeft="12dp">
+    android:layout_height="match_parent">
 
     <com.loopeer.cardstack.CardStackView
         android:id="@+id/stackview_main"
         android:paddingTop="12dp"
+        android:paddingRight="12dp"
+        android:paddingLeft="12dp"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"/>
-</com.loopeer.cardstack.EnableScrollView>
+        android:layout_height="match_parent"/>
+</LinearLayout>

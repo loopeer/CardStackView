@@ -7,14 +7,24 @@ import android.animation.ObjectAnimator;
 import android.content.Context;
 import android.database.Observable;
 import android.util.AttributeSet;
+import android.util.Log;
+import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.view.ViewGroup;
+import android.view.ViewParent;
 import android.view.animation.AccelerateDecelerateInterpolator;
+import android.widget.OverScroller;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class CardStackView extends ViewGroup {
+
+    static final int ANIMATED_SCROLL_GAP = 250;
+    static final float MAX_SCROLL_FACTOR = 0.5f;
+    private static final int INVALID_POINTER = -1;
 
     private static final String TAG = "CardStackView";
 
@@ -32,8 +42,21 @@ public class CardStackView extends ViewGroup {
     private int mNormalChildHeight = Integer.MAX_VALUE;
     private int mShowHeight;
     private AnimatorSet mSet;
-    private EnableScrollView mParentScrollView;
+    //    private EnableScrollView mParentScrollView;
     private List<ViewHolder> mViewHolders;
+
+    private OverScroller mScroller;
+    private int mLastMotionY;
+    private boolean mIsBeingDragged = false;
+    private VelocityTracker mVelocityTracker;
+    private int mTouchSlop;
+    private int mMinimumVelocity;
+    private int mMaximumVelocity;
+    private int mActivePointerId = INVALID_POINTER;
+    private final int[] mScrollOffset = new int[2];
+    private int mNestedYOffset;
+    private int mOverscrollDistance;
+    private int mOverflingDistance;
 
     public CardStackView(Context context) {
         this(context, null);
@@ -52,6 +75,19 @@ public class CardStackView extends ViewGroup {
         mViewHolders = new ArrayList<>();
         mOverlapeGaps = dp2px(20);
         mCardNormalHeight = dp2px(160);
+        initScroller();
+    }
+
+    private void initScroller() {
+        mScroller = new OverScroller(getContext());
+        setFocusable(true);
+        setDescendantFocusability(FOCUS_AFTER_DESCENDANTS);
+        final ViewConfiguration configuration = ViewConfiguration.get(getContext());
+        mTouchSlop = configuration.getScaledTouchSlop();
+        mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
+        mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
+        mOverscrollDistance = configuration.getScaledOverscrollDistance();
+        mOverflingDistance = configuration.getScaledOverflingDistance();
     }
 
     private int dp2px(int value) {
@@ -62,13 +98,13 @@ public class CardStackView extends ViewGroup {
     @Override
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
-        mParentScrollView = (EnableScrollView) getParent();
         checkContentHeightByParent();
         measureExpand(widthMeasureSpec, heightMeasureSpec);
     }
 
     private void checkContentHeightByParent() {
-        mShowHeight = mParentScrollView.getMeasuredHeight() - mParentScrollView.getPaddingTop() - mParentScrollView.getPaddingBottom();
+        View parentView = (View) getParent();
+        mShowHeight = parentView.getMeasuredHeight() - parentView.getPaddingTop() - parentView.getPaddingBottom();
     }
 
     private void measureExpand(int widthMeasureSpec, int heightMeasureSpec) {
@@ -206,7 +242,7 @@ public class CardStackView extends ViewGroup {
                     super.onAnimationEnd(animation);
                     mSelectPosition = DEFUAL_SELECT_POSITION;
                     viewHolder.getContentView().setVisibility(GONE);
-                    mParentScrollView.setScrollingEnabled(true);
+//                    mParentScrollView.setScrollingEnabled(true);
                 }
             });
             mSet.start();
@@ -221,7 +257,7 @@ public class CardStackView extends ViewGroup {
             }
             mSelectPosition = position;
             itemView.clearAnimation();
-            ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, View.Y, itemView.getY(), mParentScrollView.getScrollY() + getPaddingTop());
+            ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, View.Y, itemView.getY(), getScrollY() + getPaddingTop());
             mSet.play(oa);
             int collapseShowItemCount = 0;
             for (int i = 0; i < getChildCount(); i++) {
@@ -230,12 +266,12 @@ public class CardStackView extends ViewGroup {
                 final View child = getChildAt(i);
                 child.clearAnimation();
                 if (collapseShowItemCount < 3) {
-                    childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + mParentScrollView.getScrollY();
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + mParentScrollView.getScrollY(), childTop);
+                    childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + getScrollY();
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + getScrollY(), childTop);
                     mSet.play(oAnim);
                     collapseShowItemCount++;
                 } else {
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + mParentScrollView.getScrollY(), mShowHeight + mParentScrollView.getScrollY());
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + getScrollY(), mShowHeight + getScrollY());
                     mSet.play(oAnim);
                 }
             }
@@ -247,7 +283,7 @@ public class CardStackView extends ViewGroup {
                         preSelectViewHolder.getContentView().setVisibility(GONE);
                     }
                     viewHolder.onItemExpand(true);
-                    mParentScrollView.setScrollingEnabled(false);
+//                    mParentScrollView.setScrollingEnabled(false);
                 }
 
             });
@@ -261,6 +297,392 @@ public class CardStackView extends ViewGroup {
         mSet = new AnimatorSet();
         mSet.setInterpolator(new AccelerateDecelerateInterpolator());
         mSet.setDuration(ANIMATION_DURATION);
+    }
+
+    private boolean canScroll() {
+        View child = getChildAt(0);
+        if (child != null) {
+            int childHeight = child.getHeight();
+            return getHeight() < childHeight + getPaddingTop() + getPaddingBottom();
+        }
+        return false;
+    }
+
+    private boolean inChild(int x, int y) {
+        if (getChildCount() > 0) {
+            return true;
+        }
+        return false;
+    }
+
+    private void initOrResetVelocityTracker() {
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        } else {
+            mVelocityTracker.clear();
+        }
+    }
+
+    private void initVelocityTrackerIfNotExists() {
+        if (mVelocityTracker == null) {
+            mVelocityTracker = VelocityTracker.obtain();
+        }
+    }
+
+    private void recycleVelocityTracker() {
+        if (mVelocityTracker != null) {
+            mVelocityTracker.recycle();
+            mVelocityTracker = null;
+        }
+    }
+
+    @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        final int action = ev.getAction();
+        if ((action == MotionEvent.ACTION_MOVE) && (mIsBeingDragged)) {
+            return true;
+        }
+        if (getScrollY() == 0 && !canScrollVertically(1)) {
+            return false;
+        }
+
+        switch (action & MotionEvent.ACTION_MASK) {
+            case MotionEvent.ACTION_MOVE: {
+                final int activePointerId = mActivePointerId;
+                if (activePointerId == INVALID_POINTER) {
+                    break;
+                }
+
+                final int pointerIndex = ev.findPointerIndex(activePointerId);
+                if (pointerIndex == -1) {
+                    Log.e(TAG, "Invalid pointerId=" + activePointerId
+                            + " in onInterceptTouchEvent");
+                    break;
+                }
+
+                final int y = (int) ev.getY(pointerIndex);
+                final int yDiff = Math.abs(y - mLastMotionY);
+                if (yDiff > mTouchSlop) {
+                    mIsBeingDragged = true;
+                    mLastMotionY = y;
+                    initVelocityTrackerIfNotExists();
+                    mVelocityTracker.addMovement(ev);
+                    mNestedYOffset = 0;
+                    final ViewParent parent = getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                }
+                break;
+            }
+
+            case MotionEvent.ACTION_DOWN: {
+                final int y = (int) ev.getY();
+                if (!inChild((int) ev.getX(), (int) y)) {
+                    mIsBeingDragged = false;
+                    recycleVelocityTracker();
+                    break;
+                }
+                mLastMotionY = y;
+                mActivePointerId = ev.getPointerId(0);
+                initOrResetVelocityTracker();
+                mVelocityTracker.addMovement(ev);
+                mIsBeingDragged = !mScroller.isFinished();
+                break;
+            }
+
+            case MotionEvent.ACTION_CANCEL:
+            case MotionEvent.ACTION_UP:
+                /* Release the drag */
+                mIsBeingDragged = false;
+                mActivePointerId = INVALID_POINTER;
+                recycleVelocityTracker();
+                if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
+                    postInvalidate();
+                }
+                break;
+            case MotionEvent.ACTION_POINTER_UP:
+                onSecondaryPointerUp(ev);
+                break;
+        }
+        return mIsBeingDragged;
+    }
+
+    @Override
+    public boolean onTouchEvent(MotionEvent ev) {
+        initVelocityTrackerIfNotExists();
+
+        MotionEvent vtev = MotionEvent.obtain(ev);
+
+        final int actionMasked = ev.getActionMasked();
+
+        if (actionMasked == MotionEvent.ACTION_DOWN) {
+            mNestedYOffset = 0;
+        }
+        vtev.offsetLocation(0, mNestedYOffset);
+
+        switch (actionMasked) {
+            case MotionEvent.ACTION_DOWN: {
+                if (getChildCount() == 0) {
+                    return false;
+                }
+                if ((mIsBeingDragged = !mScroller.isFinished())) {
+                    final ViewParent parent = getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                }
+                if (!mScroller.isFinished()) {
+                    mScroller.abortAnimation();
+                }
+
+                // Remember where the motion event started
+                mLastMotionY = (int) ev.getY();
+                mActivePointerId = ev.getPointerId(0);
+                break;
+            }
+            case MotionEvent.ACTION_MOVE:
+                final int activePointerIndex = ev.findPointerIndex(mActivePointerId);
+                if (activePointerIndex == -1) {
+                    Log.e(TAG, "Invalid pointerId=" + mActivePointerId + " in onTouchEvent");
+                    break;
+                }
+
+                final int y = (int) ev.getY(activePointerIndex);
+                int deltaY = mLastMotionY - y;
+                if (!mIsBeingDragged && Math.abs(deltaY) > mTouchSlop) {
+                    final ViewParent parent = getParent();
+                    if (parent != null) {
+                        parent.requestDisallowInterceptTouchEvent(true);
+                    }
+                    mIsBeingDragged = true;
+                    if (deltaY > 0) {
+                        deltaY -= mTouchSlop;
+                    } else {
+                        deltaY += mTouchSlop;
+                    }
+                }
+                if (mIsBeingDragged) {
+                    // Scroll to follow the motion event
+                    mLastMotionY = y - mScrollOffset[1];
+
+                    final int oldY = getScrollY();
+                    final int range = getScrollRange();
+                    final int overscrollMode = getOverScrollMode();
+                    final boolean canOverscroll = overscrollMode == OVER_SCROLL_ALWAYS ||
+                            (overscrollMode == OVER_SCROLL_IF_CONTENT_SCROLLS && range > 0);
+
+                    // Calling overScrollBy will call onOverScrolled, which
+                    // calls onScrollChanged if applicable.
+                    if (overScrollBy(0, deltaY, 0, getScrollY(),
+                            0, range, 0, mOverscrollDistance, true)) {
+                        // Break our velocity if we hit a scroll barrier.
+                        mVelocityTracker.clear();
+                    }
+                }
+                break;
+            case MotionEvent.ACTION_UP:
+                if (mIsBeingDragged) {
+                    final VelocityTracker velocityTracker = mVelocityTracker;
+                    velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
+                    int initialVelocity = (int) velocityTracker.getYVelocity(mActivePointerId);
+                    if (getChildCount() > 0) {
+                        if ((Math.abs(initialVelocity) > mMinimumVelocity)) {
+                            fling(-initialVelocity);
+                        } else {
+                            if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0,
+                                    getScrollRange())) {
+                                postInvalidate();
+                            }
+                        }
+                        mActivePointerId = INVALID_POINTER;
+                    }
+                }
+                endDrag();
+                break;
+            case MotionEvent.ACTION_CANCEL:
+                if (mIsBeingDragged && getChildCount() > 0) {
+                    if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
+                        postInvalidate();
+                    }
+                    mActivePointerId = INVALID_POINTER;
+                }
+                endDrag();
+                break;
+            case MotionEvent.ACTION_POINTER_DOWN: {
+                final int index = ev.getActionIndex();
+                mLastMotionY = (int) ev.getY(index);
+                mActivePointerId = ev.getPointerId(index);
+                break;
+            }
+            case MotionEvent.ACTION_POINTER_UP:
+                onSecondaryPointerUp(ev);
+                mLastMotionY = (int) ev.getY(ev.findPointerIndex(mActivePointerId));
+                break;
+        }
+
+        if (mVelocityTracker != null) {
+            mVelocityTracker.addMovement(vtev);
+        }
+        vtev.recycle();
+        return true;
+    }
+
+    private void onSecondaryPointerUp(MotionEvent ev) {
+        final int pointerIndex = (ev.getAction() & MotionEvent.ACTION_POINTER_INDEX_MASK) >>
+                MotionEvent.ACTION_POINTER_INDEX_SHIFT;
+        final int pointerId = ev.getPointerId(pointerIndex);
+        if (pointerId == mActivePointerId) {
+            // This was our active pointer going up. Choose a new
+            // active pointer and adjust accordingly.
+            // TODO: Make this decision more intelligent.
+            final int newPointerIndex = pointerIndex == 0 ? 1 : 0;
+            mLastMotionY = (int) ev.getY(newPointerIndex);
+            mActivePointerId = ev.getPointerId(newPointerIndex);
+            if (mVelocityTracker != null) {
+                mVelocityTracker.clear();
+            }
+        }
+    }
+
+    private int getScrollRange() {
+        int scrollRange = 0;
+        if (getChildCount() > 0) {
+            scrollRange = Math.max(0,
+                    mTotalLength - (mShowHeight - getPaddingBottom() - getPaddingTop()));
+        }
+        return scrollRange;
+    }
+
+    @Override
+    protected int computeVerticalScrollRange() {
+        final int count = getChildCount();
+        final int contentHeight = mShowHeight - getPaddingBottom() - getPaddingTop();
+        if (count == 0) {
+            return contentHeight;
+        }
+
+        int scrollRange = mTotalLength;
+        final int scrollY = getScrollY();
+        final int overscrollBottom = Math.max(0, scrollRange - contentHeight);
+        if (scrollY < 0) {
+            scrollRange -= scrollY;
+        } else if (scrollY > overscrollBottom) {
+            scrollRange += scrollY - overscrollBottom;
+        }
+
+        return scrollRange;
+    }
+
+    @Override
+    protected void onOverScrolled(int scrollX, int scrollY,
+                                  boolean clampedX, boolean clampedY) {
+        if (!mScroller.isFinished()) {
+            final int oldX = getScrollX();
+            final int oldY = getScrollY();
+            setScrollX(scrollX);
+            setScaleY(scrollY);
+            onScrollChanged(getScrollX(), getScrollY(), oldX, oldY);
+            if (clampedY) {
+                mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange());
+            }
+        } else {
+            super.scrollTo(scrollX, scrollY);
+        }
+    }
+
+    @Override
+    protected int computeVerticalScrollOffset() {
+        return Math.max(0, super.computeVerticalScrollOffset());
+    }
+
+    @Override
+    public void computeScroll() {
+        if (mScroller.computeScrollOffset()) {
+            int oldX = getScrollX();
+            int oldY = getScrollY();
+            int x = mScroller.getCurrX();
+            int y = mScroller.getCurrY();
+
+            if (oldX != x || oldY != y) {
+                final int range = getScrollRange();
+                overScrollBy(x - oldX, y - oldY, oldX, oldY, 0, range,
+                        0, mOverflingDistance, false);
+                onScrollChanged(getScrollX(), getScrollY(), oldX, oldY);
+            }
+
+
+            if (oldX != x || oldY != y) {
+                final int range = getScrollRange();
+                overScrollBy(x - oldX, y - oldY, oldX, oldY, 0, range,
+                        0, mOverflingDistance, false);
+                onScrollChanged(getScrollX(), getScrollY(), oldX, oldY);
+            }
+            if (!awakenScrollBars()) {
+                // Keep on drawing until the animation has finished.
+                postInvalidate();
+            }
+        }
+    }
+
+    public void fling(int velocityY) {
+        if (getChildCount() > 0) {
+            int height = mShowHeight - getPaddingBottom() - getPaddingTop();
+            int bottom = mTotalLength;
+            mScroller.fling(getScrollX(), getScrollY(), 0, velocityY, 0, 0, 0,
+                    Math.max(0, bottom - height), 0, height / 2);
+            postInvalidate();
+        }
+    }
+
+    @Override
+    public void scrollTo(int x, int y) {
+        // we rely on the fact the View.scrollBy calls scrollTo.
+        if (getChildCount() > 0) {
+            x = clamp(x, getWidth() - getPaddingRight() - getPaddingLeft(), getWidth());
+            y = clamp(y, getHeight() - getPaddingBottom() - getPaddingBottom(), mTotalLength);
+            if (x != getScrollX() || y != getScrollY()) {
+                super.scrollTo(x, y);
+            }
+        }
+    }
+
+    private void endDrag() {
+        mIsBeingDragged = false;
+        recycleVelocityTracker();
+    }
+
+    private static int clamp(int n, int my, int child) {
+        if (my >= child || n < 0) {
+            return 0;
+        }
+        if ((my + n) > child) {
+            return child - my;
+        }
+        return n;
+    }
+
+    @Override
+    protected void measureChild(View child, int parentWidthMeasureSpec, int parentHeightMeasureSpec) {
+        ViewGroup.LayoutParams lp = child.getLayoutParams();
+        int childWidthMeasureSpec;
+        int childHeightMeasureSpec;
+        childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec, getPaddingLeft()
+                + getPaddingRight(), lp.width);
+        childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED);
+        child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
+    }
+
+    @Override
+    protected void measureChildWithMargins(View child, int parentWidthMeasureSpec, int widthUsed,
+                                           int parentHeightMeasureSpec, int heightUsed) {
+        final LayoutParams lp = (LayoutParams) child.getLayoutParams();
+        final int childWidthMeasureSpec = getChildMeasureSpec(parentWidthMeasureSpec,
+                getPaddingLeft() + getPaddingRight() + lp.leftMargin + lp.rightMargin
+                        + widthUsed, lp.width);
+        final int childHeightMeasureSpec = MeasureSpec.makeMeasureSpec(
+                lp.topMargin + lp.bottomMargin, MeasureSpec.UNSPECIFIED);
+        child.measure(childWidthMeasureSpec, childHeightMeasureSpec);
     }
 
     @Override
