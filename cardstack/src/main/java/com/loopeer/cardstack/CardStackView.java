@@ -29,7 +29,7 @@ public class CardStackView extends ViewGroup {
     private static final String TAG = "CardStackView";
 
     private static final int DEFUAL_SELECT_POSITION = -1;
-    private static final int ANIMATION_DURATION = 400;
+    private static final int ANIMATION_DURATION = 300;
 
     private int mTotalLength;
     private int mOverlapeGaps;
@@ -238,11 +238,16 @@ public class CardStackView extends ViewGroup {
             mSet.addListener(new AnimatorListenerAdapter() {
 
                 @Override
+                public void onAnimationStart(Animator animation) {
+                    super.onAnimationStart(animation);
+                    mScrollEnable = true;
+                }
+
+                @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
                     mSelectPosition = DEFUAL_SELECT_POSITION;
                     viewHolder.getContentView().setVisibility(GONE);
-                    mScrollEnable = true;
                 }
             });
             mSet.start();
@@ -265,17 +270,23 @@ public class CardStackView extends ViewGroup {
                 if (i == mSelectPosition) continue;
                 final View child = getChildAt(i);
                 child.clearAnimation();
-                if (collapseShowItemCount < 3) {
+                if (i > mSelectPosition && collapseShowItemCount < 3) {
                     childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + getScrollY();
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + getScrollY(), childTop);
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                     mSet.play(oAnim);
                     collapseShowItemCount++;
                 } else {
-                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY() + getScrollY(), mShowHeight + getScrollY());
+                    ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), mShowHeight + getScrollY());
                     mSet.play(oAnim);
                 }
             }
             mSet.addListener(new AnimatorListenerAdapter() {
+                @Override
+                public void onAnimationStart(Animator animation) {
+                    super.onAnimationStart(animation);
+                    mScrollEnable = false;
+                }
+
                 @Override
                 public void onAnimationEnd(Animator animation) {
                     super.onAnimationEnd(animation);
@@ -283,7 +294,6 @@ public class CardStackView extends ViewGroup {
                         preSelectViewHolder.getContentView().setVisibility(GONE);
                     }
                     viewHolder.onItemExpand(true);
-                    mScrollEnable = false;
                 }
 
             });
