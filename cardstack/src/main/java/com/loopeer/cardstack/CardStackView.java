@@ -29,7 +29,7 @@ public class CardStackView extends ViewGroup {
     private static final String TAG = "CardStackView";
 
     private static final int DEFUAL_SELECT_POSITION = -1;
-    private static final int ANIMATION_DURATION = 300;
+    private static final int ANIMATION_DURATION = 400;
 
     private int mTotalLength;
     private int mOverlapeGaps;
@@ -271,7 +271,7 @@ public class CardStackView extends ViewGroup {
                 final View child = getChildAt(i);
                 child.clearAnimation();
                 if (i > mSelectPosition && collapseShowItemCount < 3) {
-                    childTop = mShowHeight - (mOverlapeGaps * 3 - collapseShowItemCount * mOverlapeGaps) + getScrollY();
+                    childTop = mShowHeight - getCollapseStartTop(collapseShowItemCount, i) + getScrollY();
                     ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                     mSet.play(oAnim);
                     collapseShowItemCount++;
@@ -301,6 +301,10 @@ public class CardStackView extends ViewGroup {
         }
         if (getChildCount() == 1)
             mSet.end();
+    }
+
+    private int getCollapseStartTop(int collapseShowItemCount, int position) {
+        return mOverlapeGaps * (3 - collapseShowItemCount - (3 - (getChildCount() - mSelectPosition > 3 ? 3 : getChildCount() - mSelectPosition - 1)));
     }
 
     private void initAnimatorSet() {
