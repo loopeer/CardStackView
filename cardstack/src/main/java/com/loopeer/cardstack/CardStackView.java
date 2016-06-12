@@ -73,7 +73,7 @@ public class CardStackView extends ViewGroup {
         mOverlapeGapsCollapse = dp2px(20);
         mCardNormalHeight = dp2px(160);
         initScroller();
-        mAnimatorAdapter = new AllMoveDownAnimatorAdapter(this);
+        mAnimatorAdapter = new UpDownAnimatorAdapter(this);
     }
 
     private void initScroller() {

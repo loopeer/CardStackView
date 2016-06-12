@@ -26,6 +26,9 @@ public class UpDownAnimatorAdapter extends AnimatorAdapter {
                 ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                 mSet.play(oAnim);
                 collapseShowItemCount++;
+            } else if (i < mCardStackView.getSelectPosition()) {
+                ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), mCardStackView.getScrollY() - child.getHeight());
+                mSet.play(oAnim);
             } else {
                 ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), mCardStackView.getShowHeight() + mCardStackView.getScrollY());
                 mSet.play(oAnim);
