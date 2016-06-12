@@ -99,7 +99,7 @@ public class CardStackView extends ViewGroup {
     protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec) {
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         checkContentHeightByParent();
-        measureExpand(widthMeasureSpec, heightMeasureSpec);
+        measureChild(widthMeasureSpec, heightMeasureSpec);
     }
 
     private void checkContentHeightByParent() {
@@ -107,7 +107,7 @@ public class CardStackView extends ViewGroup {
         mShowHeight = parentView.getMeasuredHeight() - parentView.getPaddingTop() - parentView.getPaddingBottom();
     }
 
-    private void measureExpand(int widthMeasureSpec, int heightMeasureSpec) {
+    private void measureChild(int widthMeasureSpec, int heightMeasureSpec) {
         int maxWidth = 0;
         mTotalLength = 0;
         mTotalLength += getPaddingTop() + getPaddingBottom();
@@ -137,10 +137,10 @@ public class CardStackView extends ViewGroup {
 
     @Override
     protected void onLayout(boolean changed, int l, int t, int r, int b) {
-        layoutExpand();
+        layoutChild();
     }
 
-    private void layoutExpand() {
+    private void layoutChild() {
         int childTop = getPaddingTop();
         int childLeft = getPaddingLeft();
 
@@ -169,6 +169,10 @@ public class CardStackView extends ViewGroup {
                 doCardClickAnimation(mViewHolders.get(selectPosition), selectPosition);
             }
         });
+    }
+
+    public void clearSelectPosition() {
+        updateSelectPosition(mSelectPosition);
     }
 
     public void setAdapter(StackAdapter stackAdapter) {
