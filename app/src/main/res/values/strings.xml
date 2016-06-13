@@ -1,3 +1,7 @@
 <resources>
     <string name="app_name">CardStackView</string>
+
+    <string name="menu_action_all_down">All down</string>
+    <string name="menu_action_up_down">Up down</string>
+    <string name="menu_action_up_down_stack">Up down stack</string>
 </resources>

@@ -3,8 +3,13 @@ package com.loopeer.test.cardstackview;
 import android.os.Bundle;
 import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
+import android.view.Menu;
+import android.view.MenuItem;
 
+import com.loopeer.cardstack.AllMoveDownAnimatorAdapter;
 import com.loopeer.cardstack.CardStackView;
+import com.loopeer.cardstack.UpDownAnimatorAdapter;
+import com.loopeer.cardstack.UpDownStackAnimatorAdapter;
 
 import java.util.Arrays;
 
@@ -55,11 +60,32 @@ public class MainActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         mTestStackAdapter.updateData(Arrays.asList(TEST_DATAS));
-
                     }
                 }
                 , 200
         );
+    }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.menu_actions, menu);
+        return super.onCreateOptionsMenu(menu);
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.menu_all_down:
+                mStackView.setAnimatorAdapter(new AllMoveDownAnimatorAdapter(mStackView));
+                break;
+            case R.id.menu_up_down:
+                mStackView.setAnimatorAdapter(new UpDownAnimatorAdapter(mStackView));
+                break;
+            case R.id.menu_up_down_stack:
+                mStackView.setAnimatorAdapter(new UpDownStackAnimatorAdapter(mStackView));
+                break;
+        }
+        return super.onOptionsItemSelected(item);
     }
 }
+
