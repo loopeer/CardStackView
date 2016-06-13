@@ -54,6 +54,8 @@ public class CardStackView extends ViewGroup {
     private int mOverflingDistance;
     private boolean mScrollEnable = true;
 
+    private StackScroller mStackScroller;
+
     public CardStackView(Context context) {
         this(context, null);
     }
@@ -73,7 +75,8 @@ public class CardStackView extends ViewGroup {
         mOverlapeGapsCollapse = dp2px(20);
         mCardNormalHeight = dp2px(160);
         initScroller();
-        mAnimatorAdapter = new UpDownAnimatorAdapter(this);
+        mAnimatorAdapter = new UpDownStackAnimatorAdapter(this);
+        mStackScroller = new StackScroller(this);
     }
 
     private void initScroller() {
@@ -262,7 +265,7 @@ public class CardStackView extends ViewGroup {
         if ((action == MotionEvent.ACTION_MOVE) && (mIsBeingDragged)) {
             return true;
         }
-        if (getScrollY() == 0 && !canScrollVertically(1)) {
+        if (getViewScrollY() == 0 && !canScrollVertically(1)) {
             return false;
         }
 
@@ -317,7 +320,7 @@ public class CardStackView extends ViewGroup {
                 mIsBeingDragged = false;
                 mActivePointerId = INVALID_POINTER;
                 recycleVelocityTracker();
-                if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
+                if (mScroller.springBack(getViewScrollX(), getViewScrollY(), 0, 0, 0, getScrollRange())) {
                     postInvalidate();
                 }
                 break;
@@ -326,6 +329,17 @@ public class CardStackView extends ViewGroup {
                 break;
         }
         return mIsBeingDragged;
+    }
+    
+    private int getViewScrollX() {
+        return getScrollX();
+    }
+    
+    int getViewScrollY() {
+        if (mStackScroller != null) {
+            return mStackScroller.getScrollY();
+        }
+        return getScrollY();
     }
 
     @Override
@@ -388,7 +402,7 @@ public class CardStackView extends ViewGroup {
                     // Scroll to follow the motion event
                     mLastMotionY = y - mScrollOffset[1];
 
-                    final int oldY = getScrollY();
+                    final int oldY = getViewScrollY();
                     final int range = getScrollRange();
                     final int overscrollMode = getOverScrollMode();
                     final boolean canOverscroll = overscrollMode == OVER_SCROLL_ALWAYS ||
@@ -396,10 +410,14 @@ public class CardStackView extends ViewGroup {
 
                     // Calling overScrollBy will call onOverScrolled, which
                     // calls onScrollChanged if applicable.
-                    if (overScrollBy(0, deltaY, 0, getScrollY(),
-                            0, range, 0, mOverscrollDistance, true)) {
-                        // Break our velocity if we hit a scroll barrier.
-                        mVelocityTracker.clear();
+                    if (mStackScroller != null) {
+                        mStackScroller.scrollTo(0, deltaY + mStackScroller.getScrollY());
+                    } else {
+                        if (overScrollBy(0, deltaY, 0, getViewScrollY(),
+                                0, range, 0, mOverscrollDistance, true)) {
+                            // Break our velocity if we hit a scroll barrier.
+                            mVelocityTracker.clear();
+                        }
                     }
                 }
                 break;
@@ -412,7 +430,7 @@ public class CardStackView extends ViewGroup {
                         if ((Math.abs(initialVelocity) > mMinimumVelocity)) {
                             fling(-initialVelocity);
                         } else {
-                            if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0,
+                            if (mScroller.springBack(getViewScrollX(), getViewScrollY(), 0, 0, 0,
                                     getScrollRange())) {
                                 postInvalidate();
                             }
@@ -424,7 +442,7 @@ public class CardStackView extends ViewGroup {
                 break;
             case MotionEvent.ACTION_CANCEL:
                 if (mIsBeingDragged && getChildCount() > 0) {
-                    if (mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange())) {
+                    if (mScroller.springBack(getViewScrollX(), getViewScrollY(), 0, 0, 0, getScrollRange())) {
                         postInvalidate();
                     }
                     mActivePointerId = INVALID_POINTER;
@@ -482,7 +500,7 @@ public class CardStackView extends ViewGroup {
         }
 
         int scrollRange = mTotalLength;
-        final int scrollY = getScrollY();
+        final int scrollY = getViewScrollY();
         final int overscrollBottom = Math.max(0, scrollRange - contentHeight);
         if (scrollY < 0) {
             scrollRange -= scrollY;
@@ -497,13 +515,13 @@ public class CardStackView extends ViewGroup {
     protected void onOverScrolled(int scrollX, int scrollY,
                                   boolean clampedX, boolean clampedY) {
         if (!mScroller.isFinished()) {
-            final int oldX = getScrollX();
-            final int oldY = getScrollY();
+            final int oldX = getViewScrollX();
+            final int oldY = getViewScrollY();
             setScrollX(scrollX);
-            setScaleY(scrollY);
-            onScrollChanged(getScrollX(), getScrollY(), oldX, oldY);
+            setScrollY(scrollY);
+            onScrollChanged(getViewScrollX(), getViewScrollY(), oldX, oldY);
             if (clampedY) {
-                mScroller.springBack(getScrollX(), getScrollY(), 0, 0, 0, getScrollRange());
+                mScroller.springBack(getViewScrollX(), getViewScrollY(), 0, 0, 0, getScrollRange());
             }
         } else {
             super.scrollTo(scrollX, scrollY);
@@ -518,8 +536,13 @@ public class CardStackView extends ViewGroup {
     @Override
     public void computeScroll() {
         if (mScroller.computeScrollOffset()) {
-            scrollTo(0, mScroller.getCurrY());
-            postInvalidate();
+            if (mStackScroller != null) {
+                mStackScroller.scrollTo(0, mScroller.getCurrY());
+                postInvalidate();
+            } else {
+                scrollTo(0, mScroller.getCurrY());
+                postInvalidate();
+            }
         }
     }
 
@@ -527,7 +550,7 @@ public class CardStackView extends ViewGroup {
         if (getChildCount() > 0) {
             int height = mShowHeight;
             int bottom = mTotalLength;
-            mScroller.fling(getScrollX(), getScrollY(), 0, velocityY, 0, 0, 0,
+            mScroller.fling(getViewScrollX(), getViewScrollY(), 0, velocityY, 0, 0, 0,
                     Math.max(0, bottom - height), 0, height / 2);
             postInvalidate();
         }
@@ -538,7 +561,7 @@ public class CardStackView extends ViewGroup {
         if (getChildCount() > 0) {
             x = clamp(x, getWidth() - getPaddingRight() - getPaddingLeft(), getWidth());
             y = clamp(y, mShowHeight, mTotalLength);
-            if (x != getScrollX() || y != getScrollY()) {
+            if (x != getViewScrollX() || y != getViewScrollY()) {
                 super.scrollTo(x, y);
             }
         }
