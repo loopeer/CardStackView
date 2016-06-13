@@ -15,7 +15,6 @@ public class StackScrollDelegateImpl implements ScrollDelegate{
     private void updateChildPos() {
         for (int i = 0; i < mCardStackView.getChildCount(); i++) {
             View view = mCardStackView.getChildAt(i);
-            view.postInvalidate();
             if (view.getTop() - mScrollY < mCardStackView.getChildAt(0).getY()) {
                 view.setTranslationY(mCardStackView.getChildAt(0).getY() - view.getTop());
             } else if (view.getTop() - mScrollY > view.getTop()) {
@@ -31,6 +30,16 @@ public class StackScrollDelegateImpl implements ScrollDelegate{
         mScrollY = y;
         mScrollX = x;
         updateChildPos();
+    }
+
+    @Override
+    public void setViewScrollY(int y) {
+        scrollViewTo(mScrollX, y);
+    }
+
+    @Override
+    public void setViewScrollX(int x) {
+        mScrollX = x;
     }
 
     @Override

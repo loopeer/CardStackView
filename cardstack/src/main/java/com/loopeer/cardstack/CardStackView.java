@@ -175,6 +175,18 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         updateSelectPosition(mSelectPosition);
     }
 
+    public void clearScrollYAndTranslation() {
+        /*for (int i = 0; i < getChildCount(); i++) {
+            View view = getChildAt(i);
+            view.setY(view.getTop());
+        }*/
+        if (mSelectPosition != DEFUAL_SELECT_POSITION) {
+            clearSelectPosition();
+        }
+        if (mScrollDelegate != null) mScrollDelegate.setViewScrollY(0);
+        requestLayout();
+    }
+
     public void setAdapter(StackAdapter stackAdapter) {
         mStackAdapter = stackAdapter;
         mStackAdapter.registerObserver(mObserver);
@@ -182,6 +194,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     }
 
     public void setAnimatorAdapter(AnimatorAdapter animatorAdapter) {
+        clearScrollYAndTranslation();
         mAnimatorAdapter = animatorAdapter;
         if (mAnimatorAdapter instanceof UpDownStackAnimatorAdapter) {
             mScrollDelegate = new StackScrollDelegateImpl(this);
@@ -315,21 +328,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 break;
         }
         return mIsBeingDragged;
-    }
-
-    @Override
-    public int getViewScrollX() {
-        return getScrollX();
-    }
-
-    @Override
-    public void scrollViewTo(int x, int y) {
-        scrollTo(x, y);
-    }
-
-    @Override
-    public int getViewScrollY() {
-        return getScrollY();
     }
 
     @Override
@@ -503,9 +501,9 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         if (!mScroller.isFinished()) {
             final int oldX = mScrollDelegate.getViewScrollX();
             final int oldY = mScrollDelegate.getViewScrollY();
-            setScrollX(scrollX);
-            setScrollY(scrollY);
-            onScrollChanged(mScrollDelegate.getViewScrollX(), getViewScrollY(), oldX, oldY);
+            mScrollDelegate.setViewScrollX(scrollX);
+            mScrollDelegate.setViewScrollY(scrollY);
+            onScrollChanged(mScrollDelegate.getViewScrollX(), mScrollDelegate.getViewScrollY(), oldX, oldY);
             if (clampedY) {
                 mScroller.springBack(mScrollDelegate.getViewScrollX(), mScrollDelegate.getViewScrollY(), 0, 0, 0, getScrollRange());
             }
@@ -522,13 +520,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     @Override
     public void computeScroll() {
         if (mScroller.computeScrollOffset()) {
-            /*if (mStackScroller != null) {
-                mStackScroller.scrollTo(0, mScroller.getCurrY());
-                postInvalidate();
-            } else {
-                scrollTo(0, mScroller.getCurrY());
-                postInvalidate();
-            }*/
             mScrollDelegate.scrollViewTo(0, mScroller.getCurrY());
             postInvalidate();
         }
@@ -553,6 +544,31 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 super.scrollTo(x, y);
             }
         }
+    }
+
+    @Override
+    public int getViewScrollX() {
+        return getScrollX();
+    }
+
+    @Override
+    public void scrollViewTo(int x, int y) {
+        scrollTo(x, y);
+    }
+
+    @Override
+    public void setViewScrollY(int y) {
+        setScrollY(y);
+    }
+
+    @Override
+    public void setViewScrollX(int x) {
+        setScrollX(x);
+    }
+
+    @Override
+    public int getViewScrollY() {
+        return getScrollY();
     }
 
     private void endDrag() {
