@@ -306,6 +306,7 @@ public class CardStackView extends ViewGroup {
                     recycleVelocityTracker();
                     break;
                 }
+
                 mLastMotionY = y;
                 mActivePointerId = ev.getPointerId(0);
                 initOrResetVelocityTracker();
@@ -402,11 +403,7 @@ public class CardStackView extends ViewGroup {
                     // Scroll to follow the motion event
                     mLastMotionY = y - mScrollOffset[1];
 
-                    final int oldY = getViewScrollY();
                     final int range = getScrollRange();
-                    final int overscrollMode = getOverScrollMode();
-                    final boolean canOverscroll = overscrollMode == OVER_SCROLL_ALWAYS ||
-                            (overscrollMode == OVER_SCROLL_IF_CONTENT_SCROLLS && range > 0);
 
                     // Calling overScrollBy will call onOverScrolled, which
                     // calls onScrollChanged if applicable.
@@ -551,7 +548,7 @@ public class CardStackView extends ViewGroup {
             int height = mShowHeight;
             int bottom = mTotalLength;
             mScroller.fling(getViewScrollX(), getViewScrollY(), 0, velocityY, 0, 0, 0,
-                    Math.max(0, bottom - height), 0, height / 2);
+                    Math.max(0, bottom - height), 0, 0);
             postInvalidate();
         }
     }
