@@ -2,18 +2,14 @@ package com.loopeer.cardstack;
 
 import android.view.View;
 
-public class StackScroller {
+public class StackScrollDelegateImpl implements ScrollDelegate{
 
     private CardStackView mCardStackView;
     private int mScrollY;
+    private int mScrollX;
 
-    public StackScroller(CardStackView cardStackView) {
+    public StackScrollDelegateImpl(CardStackView cardStackView) {
         mCardStackView = cardStackView;
-    }
-
-    public void scrollTo(int x, int y) {
-        mScrollY = y;
-        updateChildPos();
     }
 
     private void updateChildPos() {
@@ -30,7 +26,20 @@ public class StackScroller {
         }
     }
 
-    public int getScrollY() {
+    @Override
+    public void scrollViewTo(int x, int y) {
+        mScrollY = y;
+        mScrollX = x;
+        updateChildPos();
+    }
+
+    @Override
+    public int getViewScrollY() {
         return mScrollY;
+    }
+
+    @Override
+    public int getViewScrollX() {
+        return mScrollX;
     }
 }
