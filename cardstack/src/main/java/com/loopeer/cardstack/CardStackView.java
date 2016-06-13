@@ -708,6 +708,10 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         return mShowHeight;
     }
 
+    public int getTotalLength() {
+        return mTotalLength;
+    }
+
     public ScrollDelegate getScrollDelegate() {
         return mScrollDelegate;
     }

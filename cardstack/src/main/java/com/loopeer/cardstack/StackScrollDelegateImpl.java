@@ -27,9 +27,21 @@ public class StackScrollDelegateImpl implements ScrollDelegate{
 
     @Override
     public void scrollViewTo(int x, int y) {
+        x = clamp(x, mCardStackView.getWidth() - mCardStackView.getPaddingRight() - mCardStackView.getPaddingLeft(), mCardStackView.getWidth());
+        y = clamp(y, mCardStackView.getShowHeight(), mCardStackView.getTotalLength());
         mScrollY = y;
         mScrollX = x;
         updateChildPos();
+    }
+
+    private static int clamp(int n, int my, int child) {
+        if (my >= child || n < 0) {
+            return 0;
+        }
+        if ((my + n) > child) {
+            return child - my;
+        }
+        return n;
     }
 
     @Override
@@ -39,7 +51,7 @@ public class StackScrollDelegateImpl implements ScrollDelegate{
 
     @Override
     public void setViewScrollX(int x) {
-        mScrollX = x;
+        scrollViewTo(x, mScrollY);
     }
 
     @Override
