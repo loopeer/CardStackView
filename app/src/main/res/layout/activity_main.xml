@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <com.loopeer.cardstack.CardStackView
-    xmlns:android="http://schemas.android.com/apk/res/android"
     android:id="@+id/stackview_main"
-    android:paddingTop="12dp"
-    android:paddingRight="12dp"
-    android:paddingLeft="12dp"
-    android:clipToPadding="false"
+    xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"/>
+    android:layout_height="match_parent"
+    android:clipToPadding="false"
+    android:paddingLeft="12dp"
+    android:paddingRight="12dp"
+    android:paddingTop="12dp"/>

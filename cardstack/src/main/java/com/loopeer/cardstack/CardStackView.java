@@ -1,7 +1,10 @@
 package com.loopeer.cardstack;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.database.Observable;
+import android.support.annotation.IntDef;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -12,33 +15,44 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.OverScroller;
 
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CardStackView extends ViewGroup implements ScrollDelegate {
 
-    static final int ANIMATED_SCROLL_GAP = 250;
-    static final float MAX_SCROLL_FACTOR = 0.5f;
     private static final int INVALID_POINTER = -1;
 
     private static final String TAG = "CardStackView";
 
-    static final int DEFUAL_SELECT_POSITION = -1;
+    @SuppressLint("UniqueConstants")
+    @Retention(RetentionPolicy.RUNTIME)
+    @IntDef(flag = true, value = {
+            ALL_DOWN, UP_DOWN, UP_DOWN_STACK,
+    })
+    public @interface AnimationType {
+    }
+
+    public static final int ALL_DOWN = 0;
+    public static final int UP_DOWN = 1;
+    public static final int UP_DOWN_STACK = 2;
+
+    static final int DEFAULT_SELECT_POSITION = -1;
 
     private int mTotalLength;
-    private int mOverlapeGaps;
-    private int mOverlapeGapsCollapse;
-    private int mCardNormalHeight;
-    private final int EXPAND_TYPE = 0;
-    private final int COLLAPSE_TYPE = 1;
+    private int mOverlapGaps;
+    private int mOverlapGapsCollapse;
+    private int mHeaderHeight;
     private StackAdapter mStackAdapter;
     private final ViewDataObserver mObserver = new ViewDataObserver();
-    private int mSelectPosition = DEFUAL_SELECT_POSITION;
+    private int mSelectPosition = DEFAULT_SELECT_POSITION;
     private int mNormalChildHeight = Integer.MAX_VALUE;
     private int mShowHeight;
     private List<ViewHolder> mViewHolders;
 
     private AnimatorAdapter mAnimatorAdapter;
+    private int mDuration;
 
     private OverScroller mScroller;
     private int mLastMotionY;
@@ -50,8 +64,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     private int mActivePointerId = INVALID_POINTER;
     private final int[] mScrollOffset = new int[2];
     private int mNestedYOffset;
-    private int mOverscrollDistance;
-    private int mOverflingDistance;
     private boolean mScrollEnable = true;
 
     private ScrollDelegate mScrollDelegate;
@@ -66,16 +78,20 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public CardStackView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init();
+        init(context, attrs, defStyleAttr);
     }
 
-    private void init() {
+    private void init(Context context, AttributeSet attrs, int defStyleAttr) {
+        TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.CardStackView);
+        setOverlapGaps(array.getDimensionPixelSize(R.styleable.CardStackView_stackOverlapGaps, dp2px(20)));
+        setOverlapGapsCollapse(array.getDimensionPixelSize(R.styleable.CardStackView_stackOverlapGapsCollapse, dp2px(20)));
+        setHeaderHeight(array.getDimensionPixelSize(R.styleable.CardStackView_stackHeaderHeight, dp2px(160)));
+        setDuration(array.getInt(R.styleable.CardStackView_stackDuration, AnimatorAdapter.ANIMATION_DURATION));
+        setAnimationType(array.getInt(R.styleable.CardStackView_stackAnimationType, UP_DOWN_STACK));
+        array.recycle();
+
         mViewHolders = new ArrayList<>();
-        mOverlapeGaps = dp2px(20);
-        mOverlapeGapsCollapse = dp2px(20);
-        mCardNormalHeight = dp2px(160);
         initScroller();
-        setAnimatorAdapter(new UpDownStackAnimatorAdapter(this));
     }
 
     private void initScroller() {
@@ -86,8 +102,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         mTouchSlop = configuration.getScaledTouchSlop();
         mMinimumVelocity = configuration.getScaledMinimumFlingVelocity();
         mMaximumVelocity = configuration.getScaledMaximumFlingVelocity();
-        mOverscrollDistance = configuration.getScaledOverscrollDistance();
-        mOverflingDistance = configuration.getScaledOverflingDistance();
     }
 
     private int dp2px(int value) {
@@ -115,19 +129,19 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
             final View child = getChildAt(i);
             measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
             final int totalLength = mTotalLength;
-            final int childHeight = mCardNormalHeight;
+            final int childHeight = mHeaderHeight;
             final MarginLayoutParams lp =
                     (MarginLayoutParams) child.getLayoutParams();
             mTotalLength = Math.max(totalLength, totalLength + childHeight + lp.topMargin +
                     lp.bottomMargin);
-            mTotalLength -= mOverlapeGaps * 2;
+            mTotalLength -= mOverlapGaps * 2;
             final int margin = lp.leftMargin + lp.rightMargin;
             final int measuredWidth = child.getMeasuredWidth() + margin;
             maxWidth = Math.max(maxWidth, measuredWidth);
             mNormalChildHeight = Math.min(childHeight, mNormalChildHeight);
         }
 
-        mTotalLength += mOverlapeGaps * 2;
+        mTotalLength += mOverlapGaps * 2;
         int heightSize = mTotalLength;
         heightSize = Math.max(heightSize, mShowHeight);
         int heightSizeAndState = resolveSizeAndState(heightSize, heightMeasureSpec, 0);
@@ -153,7 +167,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                     (MarginLayoutParams) child.getLayoutParams();
             childTop += lp.topMargin;
             if (i != 0) {
-                childTop -= mOverlapeGaps * 2;
+                childTop -= mOverlapGaps * 2;
                 child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
             } else {
                 child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
@@ -176,7 +190,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     }
 
     public void clearScrollYAndTranslation() {
-        if (mSelectPosition != DEFUAL_SELECT_POSITION) {
+        if (mSelectPosition != DEFAULT_SELECT_POSITION) {
             clearSelectPosition();
         }
         if (mScrollDelegate != null) mScrollDelegate.setViewScrollY(0);
@@ -187,6 +201,22 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         mStackAdapter = stackAdapter;
         mStackAdapter.registerObserver(mObserver);
         refreshView();
+    }
+
+    public void setAnimationType(int type) {
+        AnimatorAdapter animatorAdapter;
+        switch (type) {
+            case ALL_DOWN:
+                animatorAdapter = new AllMoveDownAnimatorAdapter(this);
+                break;
+            case UP_DOWN:
+                animatorAdapter = new UpDownAnimatorAdapter(this);
+                break;
+            default:
+                animatorAdapter = new UpDownStackAnimatorAdapter(this);
+                break;
+        }
+        setAnimatorAdapter(animatorAdapter);
     }
 
     public void setAnimatorAdapter(AnimatorAdapter animatorAdapter) {
@@ -214,7 +244,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     }
 
     ViewHolder getViewHolder(int i) {
-        if (i == DEFUAL_SELECT_POSITION) return null;
+        if (i == DEFAULT_SELECT_POSITION) return null;
         ViewHolder viewHolder;
         if (mViewHolders.size() <= i) {
             viewHolder = mStackAdapter.createView(this, mStackAdapter.getItemViewType(i));
@@ -328,13 +358,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
-        /*if (!mScrollEnable) {
-            if (mSelectPosition != DEFUAL_SELECT_POSITION) {
-                doCardClickAnimation(mViewHolders.get(mSelectPosition), mSelectPosition);
-            }
-            return true;
-        }*/
-
         initVelocityTrackerIfNotExists();
 
         MotionEvent vtev = MotionEvent.obtain(ev);
@@ -363,8 +386,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 if (!mScroller.isFinished()) {
                     mScroller.abortAnimation();
                 }
-
-                // Remember where the motion event started
                 mLastMotionY = (int) ev.getY();
                 mActivePointerId = ev.getPointerId(0);
                 break;
@@ -394,19 +415,13 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                     }
                 }
                 if (mIsBeingDragged) {
-                    // Scroll to follow the motion event
                     mLastMotionY = y - mScrollOffset[1];
-
                     final int range = getScrollRange();
-
-                    // Calling overScrollBy will call onOverScrolled, which
-                    // calls onScrollChanged if applicable.
                     if (mScrollDelegate instanceof StackScrollDelegateImpl) {
                         mScrollDelegate.scrollViewTo(0, deltaY + mScrollDelegate.getViewScrollY());
                     } else {
                         if (overScrollBy(0, deltaY, 0, getViewScrollY(),
-                                0, range, 0, mOverscrollDistance, true)) {
-                            // Break our velocity if we hit a scroll barrier.
+                                0, range, 0, 0, true)) {
                             mVelocityTracker.clear();
                         }
                     }
@@ -414,7 +429,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 break;
             case MotionEvent.ACTION_UP:
                 if (!mScrollEnable) {
-                    if (mSelectPosition != DEFUAL_SELECT_POSITION) {
+                    if (mSelectPosition != DEFAULT_SELECT_POSITION) {
                         doCardClickAnimation(mViewHolders.get(mSelectPosition), mSelectPosition);
                     }
                     return true;
@@ -706,12 +721,20 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         mSelectPosition = selectPosition;
     }
 
-    public int getOverlapeGaps() {
-        return mOverlapeGaps;
+    public int getOverlapGaps() {
+        return mOverlapGaps;
     }
 
-    public int getOverlapeGapsCollapse() {
-        return mOverlapeGapsCollapse;
+    public void setOverlapGaps(int overlapGaps) {
+        mOverlapGaps = overlapGaps;
+    }
+
+    public int getOverlapGapsCollapse() {
+        return mOverlapGapsCollapse;
+    }
+
+    public void setOverlapGapsCollapse(int overlapGapsCollapse) {
+        mOverlapGapsCollapse = overlapGapsCollapse;
     }
 
     public boolean isScrollEnable() {
@@ -722,8 +745,12 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         mScrollEnable = scrollEnable;
     }
 
-    public int getCardNormalHeight() {
-        return mCardNormalHeight;
+    public int getHeaderHeight() {
+        return mHeaderHeight;
+    }
+
+    public void setHeaderHeight(int headerHeight) {
+        mHeaderHeight = headerHeight;
     }
 
     public int getShowHeight() {
@@ -732,6 +759,15 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public int getTotalLength() {
         return mTotalLength;
+    }
+
+    public void setDuration(int duration) {
+        mDuration = duration;
+    }
+
+    public int getDuration() {
+        if (mAnimatorAdapter != null) return mDuration;
+        return 0;
     }
 
     public ScrollDelegate getScrollDelegate() {

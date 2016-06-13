@@ -46,13 +46,13 @@ public class UpDownStackAnimatorAdapter extends AnimatorAdapter {
                     (ViewGroup.MarginLayoutParams) child.getLayoutParams();
             childTop += lp.topMargin;
             if (i != 0) {
-                childTop -= mCardStackView.getOverlapeGaps() * 2;
+                childTop -= mCardStackView.getOverlapGaps() * 2;
             }
             ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(),
                     childTop - mCardStackView.getScrollDelegate().getViewScrollY() < mCardStackView.getChildAt(0).getY()
                             ? mCardStackView.getChildAt(0).getY() : childTop - mCardStackView.getScrollDelegate().getViewScrollY());
             mSet.play(oAnim);
-            childTop += mCardStackView.getCardNormalHeight();
+            childTop += mCardStackView.getHeaderHeight();
         }
     }
 

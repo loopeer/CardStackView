@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
 public abstract class AnimatorAdapter {
-    private static final int ANIMATION_DURATION = 400;
+    static final int ANIMATION_DURATION = 400;
 
     protected CardStackView mCardStackView;
     protected AnimatorSet mSet;
@@ -19,7 +19,7 @@ public abstract class AnimatorAdapter {
     protected void initAnimatorSet() {
         mSet = new AnimatorSet();
         mSet.setInterpolator(new AccelerateDecelerateInterpolator());
-        mSet.setDuration(ANIMATION_DURATION);
+        mSet.setDuration(getDuration());
     }
 
     public void itemClick(final ViewHolder viewHolder, int position) {
@@ -80,7 +80,7 @@ public abstract class AnimatorAdapter {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                mCardStackView.setSelectPosition(CardStackView.DEFUAL_SELECT_POSITION);
+                mCardStackView.setSelectPosition(CardStackView.DEFAULT_SELECT_POSITION);
                 viewHolder.getContentView().setVisibility(View.GONE);
             }
         });
@@ -88,6 +88,10 @@ public abstract class AnimatorAdapter {
     }
 
     protected int getCollapseStartTop(int collapseShowItemCount) {
-        return mCardStackView.getOverlapeGapsCollapse() * (3 - collapseShowItemCount - (3 - (mCardStackView.getChildCount() - mCardStackView.getSelectPosition() > 3 ? 3 : mCardStackView.getChildCount() - mCardStackView.getSelectPosition() - 1)));
+        return mCardStackView.getOverlapGapsCollapse() * (3 - collapseShowItemCount - (3 - (mCardStackView.getChildCount() - mCardStackView.getSelectPosition() > 3 ? 3 : mCardStackView.getChildCount() - mCardStackView.getSelectPosition() - 1)));
+    }
+
+    public int getDuration() {
+        return mCardStackView.getDuration();
     }
 }
