@@ -20,7 +20,7 @@ public class UpDownStackAnimatorAdapter extends AnimatorAdapter {
             if (i == mCardStackView.getSelectPosition()) continue;
             final View child = mCardStackView.getChildAt(i);
             child.clearAnimation();
-            if (i > mCardStackView.getSelectPosition() && collapseShowItemCount < 3) {
+            if (i > mCardStackView.getSelectPosition() && collapseShowItemCount < mCardStackView.getNumBottomShow()) {
                 childTop = mCardStackView.getShowHeight() - getCollapseStartTop(collapseShowItemCount);
                 ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                 mSet.play(oAnim);
