@@ -18,5 +18,4 @@ public abstract class ViewHolder {
 
     public abstract void onItemExpand(boolean b);
 
-    public abstract View getContentView();
 }

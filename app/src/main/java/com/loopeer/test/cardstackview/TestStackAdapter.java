@@ -39,12 +39,7 @@ public class TestStackAdapter extends StackAdapter<Integer> {
 
         @Override
         public void onItemExpand(boolean b) {
-            mContainerContent.setVisibility(b ? View.VISIBLE : View.GONE);
-        }
-
-        @Override
-        public View getContentView() {
-            return mContainerContent;
+//            mContainerContent.setVisibility(b ? View.VISIBLE : View.GONE);
         }
 
         public void onBind(Integer integer) {

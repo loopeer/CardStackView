@@ -3,7 +3,6 @@ package com.loopeer.cardstack;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.AnimatorSet;
-import android.view.View;
 import android.view.animation.AccelerateDecelerateInterpolator;
 
 public abstract class AnimatorAdapter {
@@ -42,7 +41,7 @@ public abstract class AnimatorAdapter {
         final int preSelectPosition = mCardStackView.getSelectPosition();
         final ViewHolder preSelectViewHolder = mCardStackView.getViewHolder(preSelectPosition);
         if (preSelectViewHolder != null) {
-            preSelectViewHolder.getContentView().setVisibility(View.INVISIBLE);
+            preSelectViewHolder.onItemExpand(false);
         }
         mCardStackView.setSelectPosition(position);
         itemExpandAnimatorSet(viewHolder, position);
@@ -56,9 +55,6 @@ public abstract class AnimatorAdapter {
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
-                if (preSelectViewHolder != null) {
-                    preSelectViewHolder.getContentView().setVisibility(View.GONE);
-                }
                 viewHolder.onItemExpand(true);
             }
 
@@ -67,7 +63,7 @@ public abstract class AnimatorAdapter {
     }
 
     private void onItemCollapse(final ViewHolder viewHolder){
-        viewHolder.getContentView().setVisibility(View.INVISIBLE);
+        viewHolder.onItemExpand(false);
         itemCollapseAnimatorSet(viewHolder);
         mSet.addListener(new AnimatorListenerAdapter() {
 
@@ -81,7 +77,6 @@ public abstract class AnimatorAdapter {
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
                 mCardStackView.setSelectPosition(CardStackView.DEFAULT_SELECT_POSITION);
-                viewHolder.getContentView().setVisibility(View.GONE);
             }
         });
         mSet.start();
