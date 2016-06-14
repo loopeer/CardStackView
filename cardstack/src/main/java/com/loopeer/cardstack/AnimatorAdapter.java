@@ -46,37 +46,62 @@ public abstract class AnimatorAdapter {
         mCardStackView.setSelectPosition(position);
         itemExpandAnimatorSet(viewHolder, position);
         mSet.addListener(new AnimatorListenerAdapter() {
+
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
                 mCardStackView.setScrollEnable(false);
+                if (preSelectViewHolder != null) {
+                    preSelectViewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_START, false);
+                }
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_START, true);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
                 viewHolder.onItemExpand(true);
+                if (preSelectViewHolder != null) {
+                    preSelectViewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_END, false);
+                }
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_END, true);
             }
 
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                super.onAnimationCancel(animation);
+                if (preSelectViewHolder != null) {
+                    preSelectViewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_CANCEL, false);
+                }
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_CANCEL, true);
+            }
         });
         mSet.start();
     }
 
     private void onItemCollapse(final CardStackView.ViewHolder viewHolder){
-        viewHolder.onItemExpand(false);
         itemCollapseAnimatorSet(viewHolder);
         mSet.addListener(new AnimatorListenerAdapter() {
 
             @Override
             public void onAnimationStart(Animator animation) {
                 super.onAnimationStart(animation);
+                viewHolder.onItemExpand(false);
                 mCardStackView.setScrollEnable(true);
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_START, false);
             }
 
             @Override
             public void onAnimationEnd(Animator animation) {
                 super.onAnimationEnd(animation);
                 mCardStackView.setSelectPosition(CardStackView.DEFAULT_SELECT_POSITION);
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_END, false);
+            }
+
+            @Override
+            public void onAnimationCancel(Animator animation) {
+                super.onAnimationCancel(animation);
+                viewHolder.onAnimationStateChange(CardStackView.ANIMATION_STATE_CANCEL, false);
             }
         });
         mSet.start();

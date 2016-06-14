@@ -22,6 +22,10 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     private static final int INVALID_POINTER = -1;
     public static final int INVALID_TYPE = -1;
+    public static final int ANIMATION_STATE_START = 0;
+    public static final int ANIMATION_STATE_END = 1;
+    public static final int ANIMATION_STATE_CANCEL = 2;
+    public static final int ANIMATION_STATE_NO = -1;
 
     private static final String TAG = "CardStackView";
 
@@ -154,7 +158,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         for (int i = 0; i < getChildCount(); i++) {
             View child = getChildAt(i);
             final int childWidth = child.getMeasuredWidth();
-            final int childHeight = child.getMeasuredHeight();
+            int childHeight = child.getMeasuredHeight();
 
             final LayoutParams lp =
                     (LayoutParams) child.getLayoutParams();
@@ -249,12 +253,17 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     }
 
     private void setClickAnimator(final ViewHolder holder, final int position) {
-        holder.itemView.setOnClickListener(new OnClickListener() {
+        setOnClickListener(new OnClickListener() {
             @Override
             public void onClick(View v) {
-                doCardClickAnimation(holder, position);
+                if (mSelectPosition == DEFAULT_SELECT_POSITION) return;
+                performItemClick(mViewHolders.get(mSelectPosition));
             }
         });
+    }
+
+    public void performItemClick(ViewHolder viewHolder) {
+        doCardClickAnimation(viewHolder, viewHolder.position);
     }
 
     private void doCardClickAnimation(final ViewHolder viewHolder, int position) {
@@ -346,11 +355,20 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 onSecondaryPointerUp(ev);
                 break;
         }
+        if (!mScrollEnable) {
+            mIsBeingDragged = false;
+        }
         return mIsBeingDragged;
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent ev) {
+        if (!mIsBeingDragged) {
+            return super.onTouchEvent(ev);
+        }
+        if (!mScrollEnable) {
+            return true;
+        }
         initVelocityTrackerIfNotExists();
 
         MotionEvent vtev = MotionEvent.obtain(ev);
@@ -364,9 +382,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
         switch (actionMasked) {
             case MotionEvent.ACTION_DOWN: {
-                if (!mScrollEnable) {
-                    return true;
-                }
                 if (getChildCount() == 0) {
                     return false;
                 }
@@ -384,9 +399,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 break;
             }
             case MotionEvent.ACTION_MOVE:
-                if (!mScrollEnable) {
-                    return true;
-                }
                 final int activePointerIndex = ev.findPointerIndex(mActivePointerId);
                 if (activePointerIndex == -1) {
                     Log.e(TAG, "Invalid pointerId=" + mActivePointerId + " in onTouchEvent");
@@ -421,12 +433,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 }
                 break;
             case MotionEvent.ACTION_UP:
-                if (!mScrollEnable) {
-                    if (mSelectPosition != DEFAULT_SELECT_POSITION) {
-                        doCardClickAnimation(mViewHolders.get(mSelectPosition), mSelectPosition);
-                    }
-                    return true;
-                }
                 if (mIsBeingDragged) {
                     final VelocityTracker velocityTracker = mVelocityTracker;
                     velocityTracker.computeCurrentVelocity(1000, mMaximumVelocity);
@@ -446,9 +452,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 endDrag();
                 break;
             case MotionEvent.ACTION_CANCEL:
-                if (!mScrollEnable) {
-                    return true;
-                }
                 if (mIsBeingDragged && getChildCount() > 0) {
                     if (mScroller.springBack(getViewScrollX(), mScrollDelegate.getViewScrollY(), 0, 0, 0, getScrollRange())) {
                         postInvalidate();
@@ -458,18 +461,12 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 endDrag();
                 break;
             case MotionEvent.ACTION_POINTER_DOWN: {
-                if (!mScrollEnable) {
-                    return true;
-                }
                 final int index = ev.getActionIndex();
                 mLastMotionY = (int) ev.getY(index);
                 mActivePointerId = ev.getPointerId(index);
                 break;
             }
             case MotionEvent.ACTION_POINTER_UP:
-                if (!mScrollEnable) {
-                    return true;
-                }
                 onSecondaryPointerUp(ev);
                 mLastMotionY = (int) ev.getY(ev.findPointerIndex(mActivePointerId));
                 break;
@@ -690,7 +687,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public static abstract class ViewHolder {
 
-        View itemView;
+        public View itemView;
         int mItemViewType = INVALID_TYPE;
         int position;
 
@@ -704,6 +701,9 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
         public abstract void onItemExpand(boolean b);
 
+        protected void onAnimationStateChange(int state, boolean willBeSelect) {
+
+        }
     }
 
     public static class AdapterDataObservable extends Observable<AdapterDataObserver> {
