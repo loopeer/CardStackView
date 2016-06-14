@@ -2,7 +2,6 @@ package com.loopeer.cardstack;
 
 import android.animation.ObjectAnimator;
 import android.view.View;
-import android.view.ViewGroup;
 
 public class AllMoveDownAnimatorAdapter extends AnimatorAdapter {
 
@@ -10,7 +9,7 @@ public class AllMoveDownAnimatorAdapter extends AnimatorAdapter {
         super(cardStackView);
     }
 
-    protected void itemExpandAnimatorSet(final ViewHolder viewHolder, int position) {
+    protected void itemExpandAnimatorSet(final CardStackView.ViewHolder viewHolder, int position) {
         final View itemView = viewHolder.itemView;
         itemView.clearAnimation();
         ObjectAnimator oa = ObjectAnimator.ofFloat(itemView, View.Y, itemView.getY(), mCardStackView.getScrollY() + mCardStackView.getPaddingTop());
@@ -34,13 +33,13 @@ public class AllMoveDownAnimatorAdapter extends AnimatorAdapter {
     }
 
     @Override
-    protected void itemCollapseAnimatorSet(ViewHolder viewHolder) {
+    protected void itemCollapseAnimatorSet(CardStackView.ViewHolder viewHolder) {
         int childTop = mCardStackView.getPaddingTop();
         for (int i = 0; i < mCardStackView.getChildCount(); i++) {
             View child = mCardStackView.getChildAt(i);
             child.clearAnimation();
-            final ViewGroup.MarginLayoutParams lp =
-                    (ViewGroup.MarginLayoutParams) child.getLayoutParams();
+            final CardStackView.LayoutParams lp =
+                    (CardStackView.LayoutParams) child.getLayoutParams();
             childTop += lp.topMargin;
             if (i != 0) {
                 childTop -= mCardStackView.getOverlapGaps() * 2;
@@ -50,7 +49,7 @@ public class AllMoveDownAnimatorAdapter extends AnimatorAdapter {
                 ObjectAnimator oAnim = ObjectAnimator.ofFloat(child, View.Y, child.getY(), childTop);
                 mSet.play(oAnim);
             }
-            childTop += mCardStackView.getHeaderHeight();
+            childTop += lp.mHeaderHeight;
         }
     }
 

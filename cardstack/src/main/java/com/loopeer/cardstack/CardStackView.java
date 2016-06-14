@@ -1,10 +1,10 @@
 package com.loopeer.cardstack;
 
-import android.annotation.SuppressLint;
+import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.database.Observable;
-import android.support.annotation.IntDef;
+import android.os.Build;
 import android.util.AttributeSet;
 import android.util.Log;
 import android.view.MotionEvent;
@@ -15,24 +15,15 @@ import android.view.ViewGroup;
 import android.view.ViewParent;
 import android.widget.OverScroller;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
 import java.util.ArrayList;
 import java.util.List;
 
 public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     private static final int INVALID_POINTER = -1;
+    public static final int INVALID_TYPE = -1;
 
     private static final String TAG = "CardStackView";
-
-    @SuppressLint("UniqueConstants")
-    @Retention(RetentionPolicy.RUNTIME)
-    @IntDef(flag = true, value = {
-            ALL_DOWN, UP_DOWN, UP_DOWN_STACK,
-    })
-    public @interface AnimationType {
-    }
 
     public static final int ALL_DOWN = 0;
     public static final int UP_DOWN = 1;
@@ -43,11 +34,9 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     private int mTotalLength;
     private int mOverlapGaps;
     private int mOverlapGapsCollapse;
-    private int mHeaderHeight;
     private StackAdapter mStackAdapter;
     private final ViewDataObserver mObserver = new ViewDataObserver();
     private int mSelectPosition = DEFAULT_SELECT_POSITION;
-    private int mNormalChildHeight = Integer.MAX_VALUE;
     private int mShowHeight;
     private List<ViewHolder> mViewHolders;
 
@@ -78,14 +67,19 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public CardStackView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
-        init(context, attrs, defStyleAttr);
+        init(context, attrs, defStyleAttr, 0);
     }
 
-    private void init(Context context, AttributeSet attrs, int defStyleAttr) {
-        TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.CardStackView);
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    public CardStackView(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        super(context, attrs, defStyleAttr, defStyleRes);
+        init(context, attrs, defStyleAttr, defStyleRes);
+    }
+
+    private void init(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
+        TypedArray array = context.obtainStyledAttributes(attrs, R.styleable.CardStackView, defStyleAttr, defStyleRes);
         setOverlapGaps(array.getDimensionPixelSize(R.styleable.CardStackView_stackOverlapGaps, dp2px(20)));
         setOverlapGapsCollapse(array.getDimensionPixelSize(R.styleable.CardStackView_stackOverlapGapsCollapse, dp2px(20)));
-        setHeaderHeight(array.getDimensionPixelSize(R.styleable.CardStackView_stackHeaderHeight, dp2px(160)));
         setDuration(array.getInt(R.styleable.CardStackView_stackDuration, AnimatorAdapter.ANIMATION_DURATION));
         setAnimationType(array.getInt(R.styleable.CardStackView_stackAnimationType, UP_DOWN_STACK));
         array.recycle();
@@ -129,16 +123,15 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
             final View child = getChildAt(i);
             measureChildWithMargins(child, widthMeasureSpec, 0, heightMeasureSpec, 0);
             final int totalLength = mTotalLength;
-            final int childHeight = mHeaderHeight;
-            final MarginLayoutParams lp =
-                    (MarginLayoutParams) child.getLayoutParams();
+            final LayoutParams lp =
+                    (LayoutParams) child.getLayoutParams();
+            final int childHeight = lp.mHeaderHeight;
             mTotalLength = Math.max(totalLength, totalLength + childHeight + lp.topMargin +
                     lp.bottomMargin);
             mTotalLength -= mOverlapGaps * 2;
             final int margin = lp.leftMargin + lp.rightMargin;
             final int measuredWidth = child.getMeasuredWidth() + margin;
             maxWidth = Math.max(maxWidth, measuredWidth);
-            mNormalChildHeight = Math.min(childHeight, mNormalChildHeight);
         }
 
         mTotalLength += mOverlapGaps * 2;
@@ -163,8 +156,8 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
             final int childWidth = child.getMeasuredWidth();
             final int childHeight = child.getMeasuredHeight();
 
-            final MarginLayoutParams lp =
-                    (MarginLayoutParams) child.getLayoutParams();
+            final LayoutParams lp =
+                    (LayoutParams) child.getLayoutParams();
             childTop += lp.topMargin;
             if (i != 0) {
                 childTop -= mOverlapGaps * 2;
@@ -172,7 +165,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
             } else {
                 child.layout(childLeft, childTop, childLeft + childWidth, childTop + childHeight);
             }
-            childTop += mNormalChildHeight;
+            childTop += lp.mHeaderHeight;
         }
     }
 
@@ -246,7 +239,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     ViewHolder getViewHolder(int i) {
         if (i == DEFAULT_SELECT_POSITION) return null;
         ViewHolder viewHolder;
-        if (mViewHolders.size() <= i) {
+        if (mViewHolders.size() <= i || mViewHolders.get(i).mItemViewType != mStackAdapter.getItemViewType(i)) {
             viewHolder = mStackAdapter.createView(this, mStackAdapter.getItemViewType(i));
             mViewHolders.add(viewHolder);
         } else {
@@ -645,8 +638,13 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public static class LayoutParams extends MarginLayoutParams {
 
+        public int mHeaderHeight;
+
         public LayoutParams(Context c, AttributeSet attrs) {
             super(c, attrs);
+
+            TypedArray array = c.obtainStyledAttributes(attrs, R.styleable.CardStackView);
+            mHeaderHeight = array.getDimensionPixelSize(R.styleable.CardStackView_stackHeaderHeight, -1);
         }
 
         public LayoutParams(int width, int height) {
@@ -663,6 +661,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
         VH createView(ViewGroup parent, int viewType) {
             VH holder = onCreateView(parent, viewType);
+            holder.mItemViewType = viewType;
             return holder;
         }
 
@@ -687,6 +686,24 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
         public void registerObserver(AdapterDataObserver observer) {
             mObservable.registerObserver(observer);
         }
+    }
+
+    public static abstract class ViewHolder {
+
+        View itemView;
+        int mItemViewType = INVALID_TYPE;
+        int position;
+
+        public ViewHolder(View view) {
+            itemView = view;
+        }
+
+        public Context getContext() {
+            return itemView.getContext();
+        }
+
+        public abstract void onItemExpand(boolean b);
+
     }
 
     public static class AdapterDataObservable extends Observable<AdapterDataObserver> {
@@ -743,14 +760,6 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public void setScrollEnable(boolean scrollEnable) {
         mScrollEnable = scrollEnable;
-    }
-
-    public int getHeaderHeight() {
-        return mHeaderHeight;
-    }
-
-    public void setHeaderHeight(int headerHeight) {
-        mHeaderHeight = headerHeight;
     }
 
     public int getShowHeight() {

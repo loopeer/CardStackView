@@ -21,7 +21,7 @@ public abstract class AnimatorAdapter {
         mSet.setDuration(getDuration());
     }
 
-    public void itemClick(final ViewHolder viewHolder, int position) {
+    public void itemClick(final CardStackView.ViewHolder viewHolder, int position) {
         if (mSet != null && mSet.isRunning()) return;
         initAnimatorSet();
         if (mCardStackView.getSelectPosition() == position) {
@@ -33,13 +33,13 @@ public abstract class AnimatorAdapter {
             mSet.end();
     }
 
-    protected abstract void itemExpandAnimatorSet(ViewHolder viewHolder, int position);
+    protected abstract void itemExpandAnimatorSet(CardStackView.ViewHolder viewHolder, int position);
 
-    protected abstract void itemCollapseAnimatorSet(ViewHolder viewHolder);
+    protected abstract void itemCollapseAnimatorSet(CardStackView.ViewHolder viewHolder);
 
-    private void onItemExpand(final ViewHolder viewHolder, int position) {
+    private void onItemExpand(final CardStackView.ViewHolder viewHolder, int position) {
         final int preSelectPosition = mCardStackView.getSelectPosition();
-        final ViewHolder preSelectViewHolder = mCardStackView.getViewHolder(preSelectPosition);
+        final CardStackView.ViewHolder preSelectViewHolder = mCardStackView.getViewHolder(preSelectPosition);
         if (preSelectViewHolder != null) {
             preSelectViewHolder.onItemExpand(false);
         }
@@ -62,7 +62,7 @@ public abstract class AnimatorAdapter {
         mSet.start();
     }
 
-    private void onItemCollapse(final ViewHolder viewHolder){
+    private void onItemCollapse(final CardStackView.ViewHolder viewHolder){
         viewHolder.onItemExpand(false);
         itemCollapseAnimatorSet(viewHolder);
         mSet.addListener(new AnimatorListenerAdapter() {

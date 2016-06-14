@@ -6,7 +6,7 @@ import android.view.LayoutInflater;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class StackAdapter<T> extends CardStackView.Adapter<ViewHolder> {
+public abstract class StackAdapter<T> extends CardStackView.Adapter<CardStackView.ViewHolder> {
 
     private final Context mContext;
     private final LayoutInflater mInflater;
@@ -39,12 +39,12 @@ public abstract class StackAdapter<T> extends CardStackView.Adapter<ViewHolder> 
     }
 
     @Override
-    public void onBindViewHolder(ViewHolder holder, int position) {
+    public void onBindViewHolder(CardStackView.ViewHolder holder, int position) {
         T data = this.getItem(position);
         this.bindView(data, position, holder);
     }
 
-    public abstract void bindView(T data, int position, ViewHolder holder);
+    public abstract void bindView(T data, int position, CardStackView.ViewHolder holder);
 
     @Override
     public int getItemCount() {
