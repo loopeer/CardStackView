@@ -79,7 +79,7 @@ public abstract class AnimatorAdapter {
         mSet.start();
     }
 
-    private void onItemCollapse(final CardStackView.ViewHolder viewHolder){
+    private void onItemCollapse(final CardStackView.ViewHolder viewHolder) {
         itemCollapseAnimatorSet(viewHolder);
         mSet.addListener(new AnimatorListenerAdapter() {
 
@@ -108,7 +108,10 @@ public abstract class AnimatorAdapter {
     }
 
     protected int getCollapseStartTop(int collapseShowItemCount) {
-        return mCardStackView.getOverlapGapsCollapse() * (3 - collapseShowItemCount - (3 - (mCardStackView.getChildCount() - mCardStackView.getSelectPosition() > 3 ? 3 : mCardStackView.getChildCount() - mCardStackView.getSelectPosition() - 1)));
+        return mCardStackView.getOverlapGapsCollapse()
+                * (mCardStackView.getNumBottomShow() - collapseShowItemCount - (mCardStackView.getNumBottomShow() - (mCardStackView.getChildCount() - mCardStackView.getSelectPosition() > mCardStackView.getNumBottomShow()
+                ? mCardStackView.getNumBottomShow()
+                : mCardStackView.getChildCount() - mCardStackView.getSelectPosition() - 1)));
     }
 
     public int getDuration() {
