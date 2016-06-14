@@ -130,6 +130,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
             final int totalLength = mTotalLength;
             final LayoutParams lp =
                     (LayoutParams) child.getLayoutParams();
+            if (lp.mHeaderHeight == -1) lp.mHeaderHeight = child.getMeasuredHeight();
             final int childHeight = lp.mHeaderHeight;
             mTotalLength = Math.max(totalLength, totalLength + childHeight + lp.topMargin +
                     lp.bottomMargin);

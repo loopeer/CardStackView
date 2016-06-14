@@ -33,7 +33,6 @@
         android:paddingBottom="60dp"
         android:overScrollMode="never"
         android:scrollbars="none"
-        android:background="@android:color/white"
         android:animateLayoutChanges="true">
 
         <TextView

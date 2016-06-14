@@ -22,6 +22,10 @@ public class TestStackAdapter extends StackAdapter<Integer> {
             ColorItemLargeHeaderViewHolder h = (ColorItemLargeHeaderViewHolder) holder;
             h.onBind(data, position);
         }
+        if (holder instanceof ColorItemWithNoHeaderViewHolder) {
+            ColorItemWithNoHeaderViewHolder h = (ColorItemWithNoHeaderViewHolder) holder;
+            h.onBind(data, position);
+        }
         if (holder instanceof ColorItemViewHolder) {
             ColorItemViewHolder h = (ColorItemViewHolder) holder;
             h.onBind(data, position);
@@ -35,6 +39,9 @@ public class TestStackAdapter extends StackAdapter<Integer> {
             case R.layout.list_card_item_larger_header:
                 view = getLayoutInflater().inflate(R.layout.list_card_item_larger_header, parent, false);
                 return new ColorItemLargeHeaderViewHolder(view);
+            case R.layout.list_card_item_with_no_header:
+                view = getLayoutInflater().inflate(R.layout.list_card_item_with_no_header, parent, false);
+                return new ColorItemWithNoHeaderViewHolder(view);
             default:
                 view = getLayoutInflater().inflate(R.layout.list_card_item, parent, false);
                 return new ColorItemViewHolder(view);
@@ -45,7 +52,9 @@ public class TestStackAdapter extends StackAdapter<Integer> {
     public int getItemViewType(int position) {
         if (position == 6) {//TODO TEST LARGER ITEM
             return R.layout.list_card_item_larger_header;
-        } else {
+        } else if (position == 10) {
+            return R.layout.list_card_item_with_no_header;
+        }else {
             return R.layout.list_card_item;
         }
     }
@@ -65,6 +74,27 @@ public class TestStackAdapter extends StackAdapter<Integer> {
         @Override
         public void onItemExpand(boolean b) {
             mContainerContent.setVisibility(b ? View.VISIBLE : View.GONE);
+        }
+
+        public void onBind(Integer data, int position) {
+            mLayout.getBackground().setColorFilter(ContextCompat.getColor(getContext(), data), PorterDuff.Mode.SRC_IN);
+            mTextTitle.setText(String.valueOf(position));
+        }
+
+    }
+
+    static class ColorItemWithNoHeaderViewHolder extends CardStackView.ViewHolder {
+        View mLayout;
+        TextView mTextTitle;
+
+        public ColorItemWithNoHeaderViewHolder(View view) {
+            super(view);
+            mLayout = view.findViewById(R.id.frame_list_card_item);
+            mTextTitle = (TextView) view.findViewById(R.id.text_list_card_title);
+        }
+
+        @Override
+        public void onItemExpand(boolean b) {
         }
 
         public void onBind(Integer data, int position) {
