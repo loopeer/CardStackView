@@ -2,6 +2,8 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 
+version = '1.0.1'
+
 android {
     compileSdkVersion 23
     buildToolsVersion "23.0.3"
@@ -65,7 +67,7 @@ install {
 task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
     classifier = 'sources'
-}
+}/*
 task javadoc(type: Javadoc) {
     source = android.sourceSets.main.java.srcDirs
     classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
@@ -73,9 +75,9 @@ task javadoc(type: Javadoc) {
 task javadocJar(type: Jar, dependsOn: javadoc) {
     classifier = 'javadoc'
     from javadoc.destinationDir
-}
+}*/
 artifacts {
-    archives javadocJar
+//    archives javadocJar
     archives sourcesJar
 }
 Properties properties = new Properties()
