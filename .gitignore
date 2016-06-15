@@ -3,6 +3,8 @@ dist
 com_crashlytics_export_strings.xml
 keys.xml
 #*.keystore
+#*.jks
+keystore/
 
 ### Android
 ###########
