@@ -2,7 +2,38 @@
 
 Screeshot
 ====
-![](/screenshot/screenshot1.gif) ![](/screenshot/screenshot2.gif) ![](/screenshot/screenshot3.gif)  
+![](/screenshot/screenshot1.gif) ![](/screenshot/screenshot2.gif) ![](/screenshot/screenshot3.gif)   
+
+Installation(waiting...)
+====
+```groovy
+dependencies {
+    
+}
+```
+
+Usages
+====
+```xml
+    <com.loopeer.cardstack.CardStackView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"/>
+```
+```java
+    mStackView = (CardStackView) findViewById(R.id.stackview_main);
+    mTestStackAdapter = new TestStackAdapter(this);
+    mStackView.setAdapter(mTestStackAdapter);
+```
+**stackOverlapGaps**
+**stackOverlapGapsCollapse**
+**stackHeaderHeight**
+**stackDuration**
+**stackNumBottomShow**
+**stackAnimationType**
+
+    * allDown
+    * upDown
+    * upDownStack
 
 License
 ====
