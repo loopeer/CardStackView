@@ -9,7 +9,7 @@ Installation(waiting...)
 ====
 ```groovy
 dependencies {
-    
+    compile 'com.loopeer.library:cardstack:1.0.1'
 }
 ```
 
