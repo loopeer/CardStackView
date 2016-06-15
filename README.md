@@ -16,16 +16,16 @@ dependencies {
 Usages
 ====
 ```xml
-    <com.loopeer.cardstack.CardStackView
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+<com.loopeer.cardstack.CardStackView
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"/>
 ```
 
 ```java
-    mStackView = (CardStackView) findViewById(R.id.stackview_main);
-    mTestStackAdapter = new TestStackAdapter(this);
-    mStackView.setAdapter(mTestStackAdapter);
-    mTestStackAdapter.updateData(Arrays.asList(TEST_DATAS));
+mStackView = (CardStackView) findViewById(R.id.stackview_main);
+mTestStackAdapter = new TestStackAdapter(this);
+mStackView.setAdapter(mTestStackAdapter);
+mTestStackAdapter.updateData(Arrays.asList(TEST_DATAS));
 ```
 
 License
