@@ -5,7 +5,7 @@ Screeshot
 ====
 ![](/screenshot/screenshot1.gif) ![](/screenshot/screenshot2.gif) ![](/screenshot/screenshot3.gif)   
 
-Installation(waiting...)
+Installation
 ====
 ```groovy
 dependencies {
