@@ -1,7 +1,7 @@
 # CardStackView
 Show something like cards with 3 kinds of animations(alldown, updown, updownstack). Two ways to scroll the items:one is scroll normal as listview, other one is scroll to overlap first one.
 
-Screeshot
+Screenshot
 ====
 ![](/screenshot/screenshot1.gif) ![](/screenshot/screenshot2.gif) ![](/screenshot/screenshot3.gif)   
 
