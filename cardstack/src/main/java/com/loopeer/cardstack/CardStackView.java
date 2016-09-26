@@ -60,6 +60,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
     private boolean mScrollEnable = true;
 
     private ScrollDelegate mScrollDelegate;
+    private ItemExpendListener mItemExpendListener;
 
     public CardStackView(Context context) {
         this(context, null);
@@ -268,6 +269,20 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
                 performItemClick(holder);
             }
         });
+    }
+
+    public void next() {
+        if (mSelectPosition == DEFAULT_SELECT_POSITION || mSelectPosition == mViewHolders.size() - 1) return;
+        performItemClick(mViewHolders.get(mSelectPosition + 1));
+    }
+
+    public void pre() {
+        if (mSelectPosition == DEFAULT_SELECT_POSITION || mSelectPosition == 0) return;
+        performItemClick(mViewHolders.get(mSelectPosition - 1));
+    }
+
+    public boolean isExpending() {
+        return mSelectPosition != DEFAULT_SELECT_POSITION;
     }
 
     public void performItemClick(ViewHolder viewHolder) {
@@ -744,6 +759,7 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public void setSelectPosition(int selectPosition) {
         mSelectPosition = selectPosition;
+        mItemExpendListener.onItemExpend(mSelectPosition != DEFAULT_SELECT_POSITION);
     }
 
     public int getOverlapGaps() {
@@ -793,5 +809,17 @@ public class CardStackView extends ViewGroup implements ScrollDelegate {
 
     public ScrollDelegate getScrollDelegate() {
         return mScrollDelegate;
+    }
+
+    public ItemExpendListener getItemExpendListener() {
+        return mItemExpendListener;
+    }
+
+    public void setItemExpendListener(ItemExpendListener itemExpendListener) {
+        mItemExpendListener = itemExpendListener;
+    }
+
+    public interface ItemExpendListener{
+        void onItemExpend(boolean expend);
     }
 }

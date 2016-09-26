@@ -5,6 +5,8 @@ import android.os.Handler;
 import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.widget.LinearLayout;
 
 import com.loopeer.cardstack.AllMoveDownAnimatorAdapter;
 import com.loopeer.cardstack.CardStackView;
@@ -13,7 +15,7 @@ import com.loopeer.cardstack.UpDownStackAnimatorAdapter;
 
 import java.util.Arrays;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements CardStackView.ItemExpendListener {
     public static Integer[] TEST_DATAS = new Integer[]{
             R.color.color_1,
             R.color.color_2,
@@ -43,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
             R.color.color_26
     };
     private CardStackView mStackView;
+    private LinearLayout mActionButtonContainer;
     private TestStackAdapter mTestStackAdapter;
 
     @Override
@@ -51,6 +54,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         mStackView = (CardStackView) findViewById(R.id.stackview_main);
+        mActionButtonContainer = (LinearLayout) findViewById(R.id.button_container);
+        mStackView.setItemExpendListener(this);
         mTestStackAdapter = new TestStackAdapter(this);
         mStackView.setAdapter(mTestStackAdapter);
 
@@ -86,6 +91,19 @@ public class MainActivity extends AppCompatActivity {
                 break;
         }
         return super.onOptionsItemSelected(item);
+    }
+
+    public void onPreClick(View view) {
+        mStackView.pre();
+    }
+
+    public void onNextClick(View view) {
+        mStackView.next();
+    }
+
+    @Override
+    public void onItemExpend(boolean expend) {
+        mActionButtonContainer.setVisibility(expend ? View.VISIBLE : View.GONE);
     }
 }
 
