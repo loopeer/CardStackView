@@ -9,7 +9,7 @@ Installation
 ====
 ```groovy
 dependencies {
-    compile 'com.loopeer.library:cardstack:1.0.1'
+    compile 'com.loopeer.library:cardstack:1.0.2'
 }
 ```
 
