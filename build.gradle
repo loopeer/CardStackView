@@ -25,3 +25,21 @@ allprojects {
 task clean(type: Delete) {
     delete rootProject.buildDir
 }
+
+ext {
+    configs = [
+            compileSdkVersion   : 24,
+            buildToolsVersion   : '24.0.2',
+            minSdkVersion       : 14,
+            targetSdkVersion    : 24,
+            versionCode         : 1,
+            versionName         : '1.0',
+            cardstackversionName: '1.0.2'
+    ]
+
+    def supportLibraryVersion = '24.2.1'
+
+    deps = [
+            appcompatV7: "com.android.support:appcompat-v7:$supportLibraryVersion",
+    ]
+}
